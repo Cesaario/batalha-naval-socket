@@ -4,11 +4,16 @@ import numpy as np
 import re
 import math
 
-HOST = '186.213.68.128'
+HOST = 'localhost'
 PORT = 32000
 
 matrizP2 = np.zeros((5,5))
 visaoP1 = np.zeros((5,5))
+mapa = [['00','10','20','30','40'],
+        ['01','11','21','31','41'],
+        ['02','12','22','32','42'],
+        ['03','13','23','33','43'],
+        ['04','14','24','34','44']]
 acertos = 0
 
 def posicaoValida(pos, tam):
@@ -21,19 +26,23 @@ def posicaoValida(pos, tam):
         orientacao = pos[3]
         lados = math.floor(tam/2)
         if(orientacao=='h' and (x-lados < 0 or x+lados > 4)):
+            print('O barco está saindo para fora do mapa')
             return False
         if(orientacao=='v' and (y-lados < 0 or y+lados > 4)):
+            print('O barco está saindo para fora do mapa')
             return False
-        
         if(orientacao=='h'):
             for i in range(x-lados, x+lados+1):
                 if(matrizP2[y][i] == 1):
+                    print('Os barcos não podem se sobrepor')
                     valido = False
         if(orientacao=='v'):
             for i in range(y-lados, y+lados+1):
                 if(matrizP2[i][x] == 1):
+                    print('Os barcos não podem se sobrepor')
                     valido = False
     else:
+        print('Posição inválida')
         valido = False
     #print(valido)
     #return False
@@ -60,10 +69,13 @@ def tiroValido(pos):
             if(visaoP1[y][x] == 0):
                 return True
             else:
+                print('Um tiro já foi dado nessa posição')
                 return False
         else:
+            print('Tiro fora do mapa.')
             return False
     else:
+        print('Formato inválido.')
         return False
 
 def clear():
@@ -96,6 +108,28 @@ def renderizar():
     for i in range(16):
         print('---', end='')
     print("")
+    mostrarMapa()
+    mostrarAjuda()
+
+def mostrarMapa():
+    print('-------------------')
+    for i in range(5):
+        for j in range(5):
+            print(mapa[i][j],end='')
+            print('  ', end='')
+        print('')
+    print('-------------------')
+
+def mostrarAjuda():
+    print('Legenda do seu campo:')
+    print('OOO: Seu barco')
+    print('xxx: Seu barco destruido')
+    print('---------------------')
+    print("Leganda do campo do oponente")
+    print("ooo: Tiro errado")
+    print("XXX: Tiro certo")
+    print('---------------------')
+
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.settimeout(3600)
@@ -111,10 +145,11 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     print("Exemplo: 1,0h para posicionar o centro do barco na posição (1,0) na horizontal.")
     print("Obs: O índice de posições começa no 0")
 
+    mostrarMapa()
     entrada = input()
     #entrada = '1,1v'
     while(not posicaoValida(entrada, 3)):
-        print('Posição inválida, por favor tente outra')
+        #print('Posição inválida, por favor tente outra')
         entrada = input()
     adicionarBarco(entrada, 3)
     s.sendall('p2a1'.encode())
@@ -129,10 +164,11 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     print("Exemplo: 2,2v para posicionar o centro do barco na posição (2,2) na vertical.")
     print("Obs: O índice de posições começa no 0")
     
+    mostrarMapa()
     entrada = input()
     #entrada = '4,2v'
     while(not posicaoValida(entrada, 5)):
-        print('Posição inválida, por favor tente outra')
+        #print('Posição inválida, por favor tente outra')
         entrada = input()
     adicionarBarco(entrada, 5)
     s.sendall('p2a2'.encode())
@@ -149,7 +185,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
     while(acertos < 8):
         renderizar()
-        print("Esperando tiro do oponente")
+        print("Esperando tiro do oponente...")
         data = s.recv(1024).decode()
 
         x = int(data[0])
@@ -174,7 +210,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         print("Digite o alvo do seu tiro...")
         entrada = input()
         while(not tiroValido(entrada)):
-            print('Posição inválida, por favor tente outra')
+            #print('Posição inválida, por favor tente outra')
             entrada = input()
         s.sendall(entrada.encode())
         
